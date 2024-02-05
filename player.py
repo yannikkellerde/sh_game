@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import Dict
-from .event_types import Event
+from typing import Dict, TYPE_CHECKING
+from sh_game.types.event_types import Event
+from typing import List, Optional
+
+if TYPE_CHECKING:
+    from sh_game.board import Board
 
 
 class Player(ABC):
     def __init__(self, id, name):
         self.name: str = name
         self.reset(id)
+        self.board: Board = None
 
     def reset(self, id):
         self.id: int = id
@@ -17,6 +22,10 @@ class Player(ABC):
 
     def __hash__(self):
         return hash(f"{self.name}_{self.id}")
+
+    @property
+    def party_membership(self):
+        return "liberal" if self.role == "liberal" else "fascist"
 
     @property
     def is_fascist_team(self):
@@ -38,5 +47,5 @@ class Player(ABC):
         """
 
     @abstractmethod
-    def perform_action(self, event_type: Event, **kwargs):
+    def perform_action(self, event_type: Event, hand: Optional[List[str]]):
         pass
