@@ -122,7 +122,9 @@ class Game:
                     f"Manager Error: Cannot perform {event} in message phase {self.board.phase}"
                 )
 
-    def inform_fascists(self):
+    def inform_roles(self):
+        for player in self.board.players:
+            self.personal_event(player, Event.PERSONAL_ROLE_CALL, role=player.role)
         fascists = [player for player in self.board.players if player.is_fascist_team]
 
         for fascist in fascists:
