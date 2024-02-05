@@ -11,6 +11,7 @@ class GameSettings:
     num_fascist_cards: int
     num_liberal_cards: int
     hitler_knows_fascists: bool
+    fascist_pre_enact: int = 0
     election_tracker_size: int = 3
     liberal_track_length: int = 5
     fascist_track_length: int = 6

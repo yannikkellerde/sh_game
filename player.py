@@ -32,7 +32,7 @@ class Player(ABC):
         return self.role in ("fascist", "hitler")
 
     def __repr__(self):
-        return f"Player(id:{self.id}, name:{self.name}, role:{self.role})"
+        return f"Player(id:{self.id}, role:{self.role})"
 
     @abstractmethod
     def inform_event(self, event_type: Event, **kwargs):

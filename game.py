@@ -16,6 +16,7 @@ class Game:
         self.board = Board(settings, players)
         self.board.shuffle_callback = self.on_shuffle
         self.manager = manager
+        self.manager.board = self.board
         self.game_result: Event = None
         self.game_end_type: GameEnd = None
 
@@ -37,6 +38,7 @@ class Game:
             self.chat_phase()
             if self.game_result is not None:
                 break
+            self.board.set_next_president()
             self.nominate_chancellor()
 
         self.broadcast(self.game_result, how=self.game_end_type)
@@ -56,27 +58,31 @@ class Game:
                 break
             elif event == Event.MESSAGE:
                 msg = player.perform_action(Event.MESSAGE)
-                self.broadcast(Event.MESSAGE, msg=msg)
+                self.broadcast(Event.MESSAGE, player=player, msg=msg)
             elif event == Event.CHANCELLOR_CLAIM:
                 assert last_c is player
                 assert not self.board.play_card_claimed
                 claim = player.perform_action(Event.CHANCELLOR_CLAIM)
-                self.broadcast(Event.CHANCELLOR_CLAIM, claim=claim)
+                self.broadcast(Event.CHANCELLOR_CLAIM, claim=claim, player=player)
+                self.board.play_card_claimed = True
             elif event == Event.PRESIDENT_CLAIM:
                 assert last_p is player
                 assert not self.board.discard_claimed
                 claim = player.perform_action(Event.PRESIDENT_CLAIM)
-                self.broadcast(Event.PRESIDENT_CLAIM, claim=claim)
+                self.broadcast(Event.PRESIDENT_CLAIM, claim=claim, player=player)
+                self.board.discard_claimed = True
             elif event in (Event.INVESTIGATION_CLAIM, Event.PEEK_CLAIM):
                 assert last_p is player
                 assert not self.board.action_claimed
-                assert self.board.action_type == event
                 assert self.board.action_done
                 claim = player.perform_action(event)
                 if event == Event.INVESTIGATION_CLAIM:
-                    self.broadcast(event, inv_claim=claim)
+                    assert self.board.action_type == Event.INVESTIGATION_ACTION
+                    self.broadcast(event, claim=claim, player=player)
                 else:
-                    self.broadcast(event, claim=claim)
+                    assert self.board.action_type == Event.PEEK_MESSAGE
+                    self.broadcast(event, claim=claim, player=player)
+                self.board.action_claimed = True
             elif (
                 self.board.phase == 2
                 and not self.board.action_done
@@ -124,9 +130,7 @@ class Game:
                 self.personal_event(
                     fascist,
                     event_type=Event.ALL_ROLE_CALLS,
-                    all_roles={
-                        player: player.role.role for player in self.state.players
-                    },
+                    all_roles={player: player.role for player in self.board.players},
                 )
 
     def personal_event(self, player: Player, event_type: Event, **kwargs):
@@ -134,7 +138,7 @@ class Game:
         self.manager.personal_event(event_type, player=player, **kwargs)
 
     def broadcast(self, event_type: Event, **kwargs):
-        for player in self.state.players:
+        for player in self.board.players:
             player.inform_event(event_type, **kwargs)
         self.manager.inform_event(event_type, **kwargs)
 
@@ -183,12 +187,12 @@ class Game:
                 num_enacted=self.board.tracks[enacted_policy] + 1,
                 maximum=self.board.settings.track_len[enacted_policy],
             )
-            self.game_result = self.board.enact_policy(enact)
+            self.game_result = self.board.enact_policy(enacted_policy)
             if self.game_result is not None:
                 self.game_end_type = GameEnd.POLICY_WIN
 
     def vote_passed(self):
-        if self.board.president.role == "hitler":
+        if self.board.chancellor.role == "hitler" and self.board.fascist_track >= 3:
             self.game_end_type = GameEnd.HITLER_CHANCELLOR
             self.game_result = Event.FASCIST_WIN
             return
@@ -233,7 +237,7 @@ class Game:
             self.introduce_presidential_power()
 
     def introduce_presidential_power(self):
-        pres_power = self.board.settings.fascist_track[self.board.fascist_track]
+        pres_power = self.board.settings.fascist_track[self.board.fascist_track - 1]
         assert self.board.action_type is None
         assert not self.board.action_done
         assert not self.board.action_claimed

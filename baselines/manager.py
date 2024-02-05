@@ -8,16 +8,18 @@ import random
 class BaselineManager(Manager):
     def personal_event(self, event_type: Event, player: Player = None, **kwargs):
         self.history.append(
-            f"Player {player.id} performed action {event_type._name_} with arguments {kwargs}"
+            f"Player {player.id} got message {event_type._name_} with arguments {kwargs}"
         )
+        print(self.history[-1])
 
     def inform_event(self, event_type: Event, **kwargs):
         self.history.append(
             f"Action {event_type._name_} happened with arguments {kwargs}"
         )
+        print(self.history[-1])
 
     def get_next_action(self) -> Tuple[Event, int]:
         legals = self.board.get_legal_actions()
-        action_type = random.choice(legals.keys())
+        action_type = random.choice(list(legals.keys()))
         pid = random.choice(legals[action_type])
         return action_type, pid
