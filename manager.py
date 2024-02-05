@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Tuple
+
 from sh_game.types.event_types import Event
-from typing import Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from sh_game.board import Board

@@ -1,6 +1,6 @@
-from sh_game.game import Game
-from sh_game.baselines.player import BaselinePlayer
 from sh_game.baselines.manager import BaselineManager
+from sh_game.baselines.player import BaselinePlayer
+from sh_game.game import Game
 
 if __name__ == "__main__":
     manager = BaselineManager()

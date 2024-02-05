@@ -1,10 +1,10 @@
 from typing import List
-from random import shuffle
+
 from sh_game.board import Board
-from sh_game.player import Player
-from sh_game.manager import Manager
 from sh_game.game_settings import GameSettings
-from sh_game.types.event_types import Event, PRESIDENT_POWERS
+from sh_game.manager import Manager
+from sh_game.player import Player
+from sh_game.types.event_types import PRESIDENT_POWERS, Event
 from sh_game.types.game_end_types import GameEnd
 
 

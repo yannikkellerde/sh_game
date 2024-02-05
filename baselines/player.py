@@ -1,7 +1,8 @@
+import random
+from typing import List, Optional
+
 from sh_game.player import Player
 from sh_game.types.event_types import Event
-import random
-from typing import Optional, List
 
 
 class BaselinePlayer(Player):

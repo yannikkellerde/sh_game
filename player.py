@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
+
 from sh_game.types.event_types import Event
-from typing import List, Optional
 
 if TYPE_CHECKING:
     from sh_game.board import Board

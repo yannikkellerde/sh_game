@@ -1,8 +1,9 @@
-from typing import Tuple
-from sh_game.manager import Manager
-from sh_game.types.event_types import Event
-from sh_game.player import Player
 import random
+from typing import Tuple
+
+from sh_game.manager import Manager
+from sh_game.player import Player
+from sh_game.types.event_types import Event
 
 
 class BaselineManager(Manager):

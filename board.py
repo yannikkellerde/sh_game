@@ -1,8 +1,9 @@
+from random import shuffle
+from typing import Dict, List
+
 from sh_game.game_settings import GameSettings
 from sh_game.player import Player
 from sh_game.types.event_types import Event
-from random import shuffle
-from typing import List, Dict
 
 
 class Board:
