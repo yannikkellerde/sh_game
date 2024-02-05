@@ -12,6 +12,9 @@ class Manager(ABC):
         self.board: Board = None
         self.history = []
 
+    def reset(self):
+        self.history = []
+
     @abstractmethod
     def personal_event(self, event_type: Event, player=None, **kwargs):
         pass

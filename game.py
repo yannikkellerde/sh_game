@@ -24,6 +24,7 @@ class Game:
         self.game_result = None
         self.game_end_type = None
         self.board.setup_new_game()
+        self.manager.reset()
         self.broadcast(Event.START)
         self.nominate_chancellor()
         while 1:
