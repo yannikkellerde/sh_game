@@ -59,18 +59,18 @@ class Game:
                 break
             elif event == Event.MESSAGE:
                 msg = player.perform_action(Event.MESSAGE)
-                self.broadcast(Event.MESSAGE, player=player, msg=msg)
+                self.broadcast(Event.MESSAGE, player=player, message=msg)
             elif event == Event.CHANCELLOR_CLAIM:
                 assert last_c is player
                 assert not self.board.play_card_claimed
                 claim = player.perform_action(Event.CHANCELLOR_CLAIM)
-                self.broadcast(Event.CHANCELLOR_CLAIM, claim=claim, player=player)
+                self.broadcast(Event.CHANCELLOR_CLAIM, hand=claim, player=player)
                 self.board.play_card_claimed = True
             elif event == Event.PRESIDENT_CLAIM:
                 assert last_p is player
                 assert not self.board.discard_claimed
                 claim = player.perform_action(Event.PRESIDENT_CLAIM)
-                self.broadcast(Event.PRESIDENT_CLAIM, claim=claim, player=player)
+                self.broadcast(Event.PRESIDENT_CLAIM, hand=claim, player=player)
                 self.board.discard_claimed = True
             elif event in (Event.INVESTIGATION_CLAIM, Event.PEEK_CLAIM):
                 assert last_p is player
@@ -79,10 +79,10 @@ class Game:
                 claim = player.perform_action(event)
                 if event == Event.INVESTIGATION_CLAIM:
                     assert self.board.action_type == Event.INVESTIGATION_ACTION
-                    self.broadcast(event, claim=claim, player=player)
+                    self.broadcast(event, hand=claim, player=player)
                 else:
                     assert self.board.action_type == Event.PEEK_MESSAGE
-                    self.broadcast(event, claim=claim, player=player)
+                    self.broadcast(event, hand=claim, player=player)
                 self.board.action_claimed = True
             elif (
                 self.board.phase == 2
@@ -219,8 +219,12 @@ class Game:
         if self.board.can_veto:
             chanc_veto = self.board.chancellor.perform_action(Event.CHANCELLOR_VETO)
             pres_veto = self.board.president.perform_action(Event.PRESIDENT_VETO)
-            self.broadcast(Event.CHANCELLOR_VETO, veto=chanc_veto)
-            self.broadcast(Event.PRESIDENT_VETO, veto=pres_veto)
+            self.broadcast(
+                Event.CHANCELLOR_VETO, veto=chanc_veto, player=self.board.chancellor
+            )
+            self.broadcast(
+                Event.PRESIDENT_VETO, veto=pres_veto, player=self.board.president
+            )
             if chanc_veto and pres_veto:
                 self.board.discards.append(enact)
                 self.vote_failed()
