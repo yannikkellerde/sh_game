@@ -108,7 +108,7 @@ class Game:
                     kill.is_dead = True
                     if kill.role == "hitler":
                         self.game_result = Event.LIBERAL_WIN
-                        self.game_end_type = GameEnd.POLICY_WIN
+                        self.game_end_type = GameEnd.HITLER_DEAD
                         return
                 elif event == Event.SPECIAL_ELECT_ACTION:
                     chosen: Player = player.perform_action(Event.SPECIAL_ELECT_ACTION)
