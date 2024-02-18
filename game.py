@@ -26,7 +26,9 @@ class Game:
         self.board.setup_new_game()
         self.manager.reset()
         self.broadcast(Event.START)
+        self.chat_phase()
         self.nominate_chancellor()
+        self.board.phase = 1
         while 1:
             self.chat_phase()
             vote_success = self.voting()
@@ -60,64 +62,69 @@ class Game:
             elif event == Event.MESSAGE:
                 msg = player.perform_action(Event.MESSAGE)
                 self.broadcast(Event.MESSAGE, player=player, message=msg)
-            elif event == Event.CHANCELLOR_CLAIM:
-                assert last_c is player
-                assert not self.board.play_card_claimed
-                claim = player.perform_action(Event.CHANCELLOR_CLAIM)
-                self.broadcast(Event.CHANCELLOR_CLAIM, hand=claim, player=player)
-                self.board.play_card_claimed = True
-            elif event == Event.PRESIDENT_CLAIM:
-                assert last_p is player
-                assert not self.board.discard_claimed
-                claim = player.perform_action(Event.PRESIDENT_CLAIM)
-                self.broadcast(Event.PRESIDENT_CLAIM, hand=claim, player=player)
-                self.board.discard_claimed = True
-            elif event in (Event.INVESTIGATION_CLAIM, Event.PEEK_CLAIM):
-                assert last_p is player
-                assert not self.board.action_claimed
-                assert self.board.action_done
-                claim = player.perform_action(event)
-                if event == Event.INVESTIGATION_CLAIM:
-                    assert self.board.action_type == Event.INVESTIGATION_ACTION
-                    self.broadcast(event, hand=claim, player=player)
-                else:
-                    assert self.board.action_type == Event.PEEK_MESSAGE
-                    self.broadcast(event, hand=claim, player=player)
-                self.board.action_claimed = True
-            elif (
-                self.board.phase == 2
-                and not self.board.action_done
-                and self.board.action_type in PRESIDENT_POWERS
-            ):
-                assert self.board.action_type == event
-                assert last_p is player
-                if event == Event.INVESTIGATION_ACTION:
-                    inv: Player = player.perform_action(Event.INVESTIGATION_ACTION)
-                    assert not inv.is_dead and inv is not player
-                    self.broadcast(Event.INVESTIGATION_ACTION, pres=player, inved=inv)
-                    self.personal_event(
-                        player,
-                        Event.INVESTIGATION_RESULT,
-                        inv_pid=inv.id,
-                        inv_role=inv.party_membership,
-                    )
-                elif event == Event.EXECUTE_ACTION:
-                    kill: Player = player.perform_action(Event.EXECUTE_ACTION)
-                    assert not kill.is_dead and kill is not player
-                    self.broadcast(Event.EXECUTE_ACTION, pres=player, targ=kill)
-                    kill.is_dead = True
-                    if kill.role == "hitler":
-                        self.game_result = Event.LIBERAL_WIN
-                        self.game_end_type = GameEnd.HITLER_DEAD
-                        return
-                elif event == Event.SPECIAL_ELECT_ACTION:
-                    chosen: Player = player.perform_action(Event.SPECIAL_ELECT_ACTION)
-                    assert not chosen.is_dead and chosen is not player
-                    self.broadcast(
-                        Event.SPECIAL_ELECT_ACTION, old_pres=player, new_pres=chosen
-                    )
-                    self.board.special_elect_choice = chosen
-                self.board.action_done = True
+            elif self.board.phase > 0:
+                if event == Event.CHANCELLOR_CLAIM:
+                    assert last_c is player
+                    assert not self.board.play_card_claimed
+                    claim = player.perform_action(Event.CHANCELLOR_CLAIM)
+                    self.broadcast(Event.CHANCELLOR_CLAIM, hand=claim, player=player)
+                    self.board.play_card_claimed = True
+                elif event == Event.PRESIDENT_CLAIM:
+                    assert last_p is player
+                    assert not self.board.discard_claimed
+                    claim = player.perform_action(Event.PRESIDENT_CLAIM)
+                    self.broadcast(Event.PRESIDENT_CLAIM, hand=claim, player=player)
+                    self.board.discard_claimed = True
+                elif event in (Event.INVESTIGATION_CLAIM, Event.PEEK_CLAIM):
+                    assert last_p is player
+                    assert not self.board.action_claimed
+                    assert self.board.action_done
+                    claim = player.perform_action(event)
+                    if event == Event.INVESTIGATION_CLAIM:
+                        assert self.board.action_type == Event.INVESTIGATION_ACTION
+                        self.broadcast(event, hand=claim, player=player)
+                    else:
+                        assert self.board.action_type == Event.PEEK_MESSAGE
+                        self.broadcast(event, hand=claim, player=player)
+                    self.board.action_claimed = True
+                elif (
+                    self.board.phase == 2
+                    and not self.board.action_done
+                    and self.board.action_type in PRESIDENT_POWERS
+                ):
+                    assert self.board.action_type == event
+                    assert last_p is player
+                    if event == Event.INVESTIGATION_ACTION:
+                        inv: Player = player.perform_action(Event.INVESTIGATION_ACTION)
+                        assert not inv.is_dead and inv is not player
+                        self.broadcast(
+                            Event.INVESTIGATION_ACTION, pres=player, inved=inv
+                        )
+                        self.personal_event(
+                            player,
+                            Event.INVESTIGATION_RESULT,
+                            inv_pid=inv.id,
+                            inv_role=inv.party_membership,
+                        )
+                    elif event == Event.EXECUTE_ACTION:
+                        kill: Player = player.perform_action(Event.EXECUTE_ACTION)
+                        assert not kill.is_dead and kill is not player
+                        self.broadcast(Event.EXECUTE_ACTION, pres=player, targ=kill)
+                        kill.is_dead = True
+                        if kill.role == "hitler":
+                            self.game_result = Event.LIBERAL_WIN
+                            self.game_end_type = GameEnd.HITLER_DEAD
+                            return
+                    elif event == Event.SPECIAL_ELECT_ACTION:
+                        chosen: Player = player.perform_action(
+                            Event.SPECIAL_ELECT_ACTION
+                        )
+                        assert not chosen.is_dead and chosen is not player
+                        self.broadcast(
+                            Event.SPECIAL_ELECT_ACTION, old_pres=player, new_pres=chosen
+                        )
+                        self.board.special_elect_choice = chosen
+                    self.board.action_done = True
             else:
                 raise ValueError(
                     f"Manager Error: Cannot perform {event} in message phase {self.board.phase}"

@@ -55,7 +55,7 @@ class Board:
 
         self.action_type: Event = None
         self.action_done: bool = False
-        self.phase: int = 1
+        self.phase: int = 0
 
     @property
     def tracks(self):
