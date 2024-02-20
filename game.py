@@ -25,7 +25,13 @@ class Game:
         self.game_end_type = None
         self.board.setup_new_game()
         self.manager.reset()
+        self.inform_roles()
         self.broadcast(Event.START)
+        self.broadcast(
+            Event.GAME_SETTINGS,
+            num_players=len(self.board.players),
+            rebalanced="active",
+        )
         # self.board.phase = 2
         # self.chat_phase() # TODO: Make this work
         self.nominate_chancellor()
