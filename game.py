@@ -26,7 +26,8 @@ class Game:
         self.board.setup_new_game()
         self.manager.reset()
         self.broadcast(Event.START)
-        self.chat_phase()
+        # self.board.phase = 2
+        # self.chat_phase() # TODO: Make this work
         self.nominate_chancellor()
         self.board.phase = 1
         while 1:
