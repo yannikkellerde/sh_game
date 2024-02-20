@@ -30,7 +30,7 @@ class Game:
         self.broadcast(
             Event.GAME_SETTINGS,
             num_players=len(self.board.players),
-            rebalanced="active",
+            disable_rebalance="No",
         )
         # self.board.phase = 2
         # self.chat_phase() # TODO: Make this work
