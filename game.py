@@ -31,6 +31,7 @@ class Game:
             Event.GAME_SETTINGS,
             num_players=len(self.board.players),
             disable_rebalance="No",
+            remake="No",
         )
         # self.board.phase = 2
         # self.chat_phase() # TODO: Make this work
