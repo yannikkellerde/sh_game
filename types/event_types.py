@@ -38,6 +38,10 @@ class Event(str, Enum):
     NOOP = "NOOP"
 
 
+INVERTED_EVENTS: dict[str, Event] = {
+    value.value: value for key, value in vars(Event).items() if not key.startswith("_")
+}
+
 PRESIDENT_POWERS = [
     Event.INVESTIGATION_ACTION,
     Event.SPECIAL_ELECT_ACTION,
