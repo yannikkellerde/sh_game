@@ -140,7 +140,7 @@ class Game:
 
     def inform_roles(self):
         for player in self.board.players:
-            self.personal_event(player, Event.PERSONAL_ROLE_CALL, role=player.role)
+            self.personal_event(player, Event.PERSONAL_ROLE_CALL)
         fascists = [player for player in self.board.players if player.is_fascist_team]
 
         for fascist in fascists:
