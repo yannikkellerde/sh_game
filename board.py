@@ -57,6 +57,7 @@ class Board:
         self.action_type: Event = None
         self.action_done: bool = False
         self.phase: int = 0
+        self.round_number: int = 0
 
     @property
     def tracks(self):
@@ -70,12 +71,12 @@ class Board:
     def alive_players(self):
         return sum(not x.is_dead for x in self.players)
 
-    def draw_policy(self, num):
+    def draw_policy(self, num) -> str:
         drawn = self.peek_policy(num)
         self.policies = self.policies[num:]
         return drawn
 
-    def peek_policy(self, num):
+    def peek_policy(self, num) -> str:
         if len(self.policies) >= num:
             return self.policies[:num]
         else:

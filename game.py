@@ -50,6 +50,7 @@ class Game:
             if self.game_result is not None:
                 break
             self.board.set_next_president()
+            self.board.round_number += 1
             self.nominate_chancellor()
 
         self.broadcast(self.game_result, how=self.game_end_type)
@@ -207,7 +208,11 @@ class Game:
             )
             self.game_result = self.board.enact_policy(enacted_policy)
             if self.game_result is not None:
-                self.game_end_type = GameEnd.POLICY_WIN
+                self.game_end_type = (
+                    GameEnd.LIBERAL_CARDS
+                    if self.game_result is Event.LIBERAL_WIN
+                    else GameEnd.FASCIST_CARDS
+                )
 
     def vote_passed(self):
         if self.board.chancellor.role == "hitler" and self.board.fascist_track >= 3:
@@ -253,7 +258,10 @@ class Game:
         )
         self.game_result = self.board.enact_policy(enact)
         if self.game_result is not None:
-            self.game_end_type = GameEnd.POLICY_WIN
+            if self.game_result is Event.FASCIST_WIN:
+                self.game_end_type = GameEnd.FASCIST_CARDS
+            else:
+                self.game_end_type = GameEnd.LIBERAL_CARDS
             return
         if enact == "fascist":
             self.introduce_presidential_power()
