@@ -188,7 +188,7 @@ class Board:
                 and not self.ex_chancellor.is_dead
             ):
                 legals[Event.CHANCELLOR_CLAIM] = [self.ex_chancellor.id]
-        elif self.phase == 2:
+        elif self.phase in (0, 2):
             legals = {
                 Event.MESSAGE: [i for i, x in enumerate(self.players) if not x.is_dead],
             }
@@ -199,9 +199,13 @@ class Board:
             # else:
             if self.action_type is None or self.action_done:
                 legals[Event.NOMINATION] = [self.compute_next_president().id]
-            if not self.discard_claimed:
+            if not self.discard_claimed and self.phase == 2:
                 legals[Event.PRESIDENT_CLAIM] = [self.president.id]
-            if not self.play_card_claimed and not self.chancellor.is_dead:
+            if (
+                not self.play_card_claimed
+                and not (self.chancellor is None or self.chancellor.is_dead)
+                and self.phase == 2
+            ):
                 legals[Event.CHANCELLOR_CLAIM] = [self.chancellor.id]
             if self.action_type is not None and not self.action_done:
                 legals[self.action_type] = [self.president.id]

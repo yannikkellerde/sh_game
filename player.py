@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sh_game.types.event_types import Event
 
@@ -47,5 +47,7 @@ class Player(ABC):
         """
 
     @abstractmethod
-    def perform_action(self, event_type: Event, hand: Optional[List[str]]):
+    def perform_action(
+        self, event_type: Event, hand: Optional[List[str]]
+    ) -> tuple[Any, dict]:
         pass

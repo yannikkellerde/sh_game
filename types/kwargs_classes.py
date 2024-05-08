@@ -1,11 +1,13 @@
-from typing import Literal, Optional, NamedTuple
+from dataclasses import dataclass
+from typing import Literal, NamedTuple, Optional
+
+from sh_game.player import Player
 from sh_game.types.event_types import Event
 from sh_game.types.game_end_types import GameEnd
-from sh_game.player import Player
-from dataclasses import dataclass
 
 YN = Literal["yes", "no"]
 JN = Literal["ja", "nein"]
+
 
 KWARGS_CLASSES = {
     Event.PERSONAL_ROLE_CALL: NamedTuple("PersonalRoleCall", []),
