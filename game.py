@@ -2,6 +2,7 @@ from typing import List
 
 from sh_game.board import Board
 from sh_game.game_settings import GameSettings
+from sh_game.log_util import log
 from sh_game.manager import Manager
 from sh_game.player import Player
 from sh_game.types.event_types import PRESIDENT_POWERS, Event
@@ -19,8 +20,11 @@ class Game:
         self.manager.board = self.board
         self.game_result: Event = None
         self.game_end_type: GameEnd = None
+        self.max_repeated_chat_messages = 40
+        self.chat_streak = 0
 
     def run_game(self):
+        self.chat_streak = 0
         self.game_result = None
         self.game_end_type = None
         self.board.setup_new_game()
@@ -33,6 +37,7 @@ class Game:
         )
         self.inform_roles()
         self.broadcast(Event.START)
+
         self.chat_phase()  # TODO: Make this work
         self.nominate_chancellor()
         self.board.phase = 1
@@ -65,11 +70,19 @@ class Game:
         while 1:
             event, pid = self.manager.get_next_action()
             player = self.board.players[pid]
-            if event == move_on_event:
+            if event == move_on_event or (
+                event == Event.MESSAGE
+                and self.chat_streak >= self.max_repeated_chat_messages
+            ):
+                self.chat_streak = 0
                 break
             elif event == Event.MESSAGE:
+                self.chat_streak += 1
                 msg, hint = player.perform_action(Event.MESSAGE)
-                self.broadcast(Event.MESSAGE, player=player, message=msg, hint=hint)
+                if msg is None:
+                    log(f"Player {player.id} refused to send a message", level="info")
+                else:
+                    self.broadcast(Event.MESSAGE, player=player, message=msg, hint=hint)
             elif self.board.phase > 0:
                 if event == Event.CHANCELLOR_CLAIM:
                     assert last_c is player
@@ -87,10 +100,17 @@ class Game:
                     assert last_p is player
                     assert not self.board.action_claimed
                     assert self.board.action_done
-                    claim, _hint = player.perform_action(event)
+                    claim, _hint = player.perform_action(
+                        event, inved=self.board.inv_target
+                    )
                     if event == Event.INVESTIGATION_CLAIM:
                         assert self.board.action_type == Event.INVESTIGATION_ACTION
-                        self.broadcast(event, hand=claim, player=player)
+                        self.broadcast(
+                            event,
+                            pres=player,
+                            inved=self.board.inv_target,
+                            role=claim,
+                        )
                     else:
                         assert self.board.action_type == Event.PEEK_MESSAGE
                         self.broadcast(event, hand=claim, player=player)
@@ -106,6 +126,7 @@ class Game:
                         inv: Player
                         inv, _hint = player.perform_action(Event.INVESTIGATION_ACTION)
                         assert not inv.is_dead and inv is not player
+                        self.board.inv_target = inv
                         self.broadcast(
                             Event.INVESTIGATION_ACTION, pres=player, inved=inv
                         )
@@ -243,17 +264,20 @@ class Game:
             chanc_veto, _hint = self.board.chancellor.perform_action(
                 Event.CHANCELLOR_VETO
             )
-            pres_veto, _hint = self.board.president.perform_action(Event.PRESIDENT_VETO)
             self.broadcast(
                 Event.CHANCELLOR_VETO, veto=chanc_veto, player=self.board.chancellor
             )
-            self.broadcast(
-                Event.PRESIDENT_VETO, veto=pres_veto, player=self.board.president
-            )
-            if chanc_veto and pres_veto:
-                self.board.discards.append(enact)
-                self.vote_failed()
-                return
+            if chanc_veto:
+                pres_veto, _hint = self.board.president.perform_action(
+                    Event.PRESIDENT_VETO
+                )
+                self.broadcast(
+                    Event.PRESIDENT_VETO, veto=pres_veto, player=self.board.president
+                )
+                if pres_veto:
+                    self.board.discards.append(enact)
+                    self.vote_failed()
+                    return
 
         self.broadcast(
             Event.ENACTED,

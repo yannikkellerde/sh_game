@@ -7,6 +7,7 @@ from sh_game.types.game_end_types import GameEnd
 
 YN = Literal["yes", "no"]
 JN = Literal["ja", "nein"]
+TEAM = Literal["fascist", "liberal"]
 
 
 KWARGS_CLASSES = {
@@ -15,35 +16,35 @@ KWARGS_CLASSES = {
         "AllRoleCalls", [("all_roles", dict[Player, str])]
     ),
     Event.PERSONAL_VOTE: NamedTuple("PersonalVote", [("vote", JN)]),
-    Event.DRAW: NamedTuple("Draw", [("hand", list[str])]),
-    Event.DISCARD: NamedTuple("Discard", [("dropped_card", str)]),
-    Event.GET_CARD: NamedTuple("GetCard", [("hand", list[str]), ("pres", Player)]),
-    Event.PLAY_CARD: NamedTuple("PlayCard", [("card", str)]),
-    Event.PEEK_PERSONAL: NamedTuple("PeekPersonal", [("peek", str)]),
+    Event.DRAW: NamedTuple("Draw", [("hand", list[TEAM])]),
+    Event.DISCARD: NamedTuple("Discard", [("dropped_card", TEAM)]),
+    Event.GET_CARD: NamedTuple("GetCard", [("hand", list[TEAM]), ("pres", Player)]),
+    Event.PLAY_CARD: NamedTuple("PlayCard", [("card", TEAM)]),
+    Event.PEEK_PERSONAL: NamedTuple("PeekPersonal", [("peek", list[TEAM])]),
     Event.NOMINATION: NamedTuple("Nomination", [("pres", Player), ("chanc", Player)]),
     Event.VOTES: NamedTuple("Votes", [("votes", dict[Player, JN])]),
     Event.MESSAGE: NamedTuple("Message", [("player", Player), ("message", str)]),
     Event.ENACTED: NamedTuple(
-        "Enacted", [("policy", str), ("num_enacted", int), ("maximum", int)]
+        "Enacted", [("policy", TEAM), ("num_enacted", int), ("maximum", int)]
     ),
     Event.ELECTION_FAIL: NamedTuple(
         "ElectionFail", [("num_fails", int), ("max_fails", int)]
     ),
     Event.PRESIDENT_CLAIM: NamedTuple(
-        "PresidentClaim", [("hand", list[str]), ("player", Player)]
+        "PresidentClaim", [("hand", list[TEAM]), ("player", Player)]
     ),
     Event.CHANCELLOR_CLAIM: NamedTuple(
-        "ChancellorClaim", [("hand", list[str]), ("player", Player)]
+        "ChancellorClaim", [("hand", list[TEAM]), ("player", Player)]
     ),
     Event.INVESTIGATION_MESSAGE: NamedTuple("InvestigationMessage", []),
     Event.INVESTIGATION_ACTION: NamedTuple(
         "InvestigationAction", [("pres", Player), ("inved", Player)]
     ),
     Event.INVESTIGATION_CLAIM: NamedTuple(
-        "InvestigationClaim", [("hand", list[str]), ("player", Player)]
+        "InvestigationClaim", [("pres", Player), ("inved", Player), ("role", TEAM)]
     ),
     Event.INVESTIGATION_RESULT: NamedTuple(
-        "InvestigationResult", [("inv_pid", int), ("inv_role", str)]
+        "InvestigationResult", [("inv_pid", int), ("inv_role", TEAM)]
     ),
     Event.SPECIAL_ELECT_MESSAGE: NamedTuple("SpecialElectMessage", []),
     Event.SPECIAL_ELECT_ACTION: NamedTuple(

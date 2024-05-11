@@ -48,6 +48,6 @@ class Player(ABC):
 
     @abstractmethod
     def perform_action(
-        self, event_type: Event, hand: Optional[List[str]]
+        self, event_type: Event, hand: Optional[List[str]], inved=Optional["Player"]
     ) -> tuple[Any, dict]:
         pass
