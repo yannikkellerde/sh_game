@@ -42,6 +42,9 @@ INVERTED_EVENTS: dict[str, Event] = {
     value.value: value for key, value in vars(Event).items() if not key.startswith("_")
 }
 
+EVENT_IDX: dict[Event, int] = {event: idx for idx, event in enumerate(Event)}
+IDX_EVENT: dict[int, Event] = {idx: event for idx, event in enumerate(Event)}
+
 PRESIDENT_POWERS = [
     Event.INVESTIGATION_ACTION,
     Event.SPECIAL_ELECT_ACTION,
