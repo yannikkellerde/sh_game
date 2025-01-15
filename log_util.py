@@ -15,6 +15,7 @@ level_map = {
     "INFO": logging.INFO,
     "ERROR": logging.ERROR,
     "DEBUG": logging.DEBUG,
+    "WARNING": logging.WARNING,
 }
 
 

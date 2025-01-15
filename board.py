@@ -1,8 +1,6 @@
 from random import shuffle
 from typing import Dict, List
 
-from typeguard import typechecked
-
 from sh_game.game_settings import GameSettings
 from sh_game.player import Player
 from sh_game.types.event_types import Event
@@ -176,7 +174,6 @@ class Board:
     def get_legal_to_act_on(self):
         return [x for x in self.players if (not x.is_dead and not x is self.president)]
 
-    @typechecked
     def get_legal_actions(self) -> Dict[Event, List[int]]:
         if self.phase == 1:
             legals = {
