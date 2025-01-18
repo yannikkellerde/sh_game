@@ -6,10 +6,10 @@ from sh_game.types.event_types import Event
 
 
 class BaselinePlayer(Player):
-    def inform_event(self, event_type, **kwargs):
+    def inform_event(self, event, **kwargs):
         pass
 
-    def personal_event(self, event_type, **kwargs):
+    def personal_event(self, event, **kwargs):
         pass
 
     def perform_action(self, event_type: Event, hand: Optional[List[str]] = None):

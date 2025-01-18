@@ -80,7 +80,7 @@ class Game:
                 self.chat_streak += 1
                 msg, hint = player.perform_action(Event.MESSAGE)
                 if msg is None:
-                    log(f"Player {player.id} refused to send a message", level="info")
+                    log(f"Player {player.pid} refused to send a message", level="info")
                 else:
                     self.broadcast(Event.MESSAGE, player=player, message=msg, hint=hint)
             elif self.board.phase > 0:
@@ -133,7 +133,7 @@ class Game:
                         self.personal_event(
                             player,
                             Event.INVESTIGATION_RESULT,
-                            inv_pid=inv.id,
+                            inv_pid=inv.pid,
                             inv_role=inv.party_membership,
                         )
                     elif event == Event.EXECUTE_ACTION:

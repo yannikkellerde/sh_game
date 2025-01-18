@@ -8,20 +8,22 @@ if TYPE_CHECKING:
 
 
 class Player(ABC):
-    def __init__(self, id, name):
+    def __init__(self, pid, name):
         self.name: str = name
-        self.reset(id)
+        self.reset(pid)
         self.board: Board = None
+        self.num_players: int = None
+        self.game_id: str = None
 
-    def reset(self, id):
-        self.id: int = id
+    def reset(self, pid):
+        self.pid: int = pid
         self.role: str = None
         self.is_dead = False
-        self.known_roles: Dict[Player, str] = {}
+        self.known_roles: Dict[int, str] = {}
         self.history = []
 
     def __hash__(self):
-        return hash(f"{self.name}_{self.id}")
+        return hash(f"{self.name}_{self.pid}")
 
     @property
     def party_membership(self):
@@ -32,22 +34,20 @@ class Player(ABC):
         return self.role in ("fascist", "hitler")
 
     def __repr__(self):
-        return f"Player(id:{self.id}, role:{self.role})"
+        return f"Player(id:{self.pid}, role:{self.role})"
 
     @abstractmethod
-    def inform_event(self, event_type: Event, **kwargs):
+    def inform_event(self, event: Event, **kwargs):
         """
         Get information on a game event that happened
         """
 
     @abstractmethod
-    def personal_event(self, event_type: Event, **kwargs):
+    def personal_event(self, event: Event, **kwargs):
         """
         Get some personal event
         """
 
     @abstractmethod
-    def perform_action(
-        self, event_type: Event, hand: Optional[List[str]], inved=Optional["Player"]
-    ) -> tuple[Any, dict]:
+    def perform_action(self, event_type: Event, **kwargs) -> tuple[Any, dict]:
         pass

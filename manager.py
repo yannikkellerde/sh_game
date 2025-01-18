@@ -22,7 +22,7 @@ class Manager(ABC):
         pass
 
     @abstractmethod
-    def inform_event(self, event_type: Event, **kwargs):
+    def inform_event(self, event: Event, **kwargs):
         pass
 
     @abstractmethod

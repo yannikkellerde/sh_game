@@ -7,16 +7,14 @@ from sh_game.types.event_types import Event
 
 
 class BaselineManager(Manager):
-    def personal_event(self, event_type: Event, player: Player = None, **kwargs):
+    def personal_event(self, event: Event, player: Player = None, **kwargs):
         self.history.append(
-            f"Player {player.id} got message {event_type._name_} with arguments {kwargs}"
+            f"Player {player.pid} got message {event._name_} with arguments {kwargs}"
         )
         print(self.history[-1])
 
-    def inform_event(self, event_type: Event, **kwargs):
-        self.history.append(
-            f"Action {event_type._name_} happened with arguments {kwargs}"
-        )
+    def inform_event(self, event: Event, **kwargs):
+        self.history.append(f"Action {event._name_} happened with arguments {kwargs}")
         print(self.history[-1])
 
     def get_next_action(self) -> Tuple[Event, int]:
