@@ -1,4 +1,5 @@
 from typing import List
+from uuid import uuid4
 
 from sh_game.board import Board
 from sh_game.game_settings import GameSettings
@@ -17,13 +18,15 @@ class Game:
         self.board = Board(settings, players)
         self.board.shuffle_callback = self.on_shuffle
         self.manager = manager
-        self.manager.board = self.board
+        self.manager.set_game(self)
         self.game_result: Event = None
         self.game_end_type: GameEnd = None
         self.max_repeated_chat_messages = 40
         self.chat_streak = 0
+        self.game_id = None
 
     def run_game(self):
+        self.game_id = str(uuid4())
         self.chat_streak = 0
         self.game_result = None
         self.game_end_type = None
@@ -172,7 +175,9 @@ class Game:
                 self.personal_event(
                     fascist,
                     event_type=Event.ALL_ROLE_CALLS,
-                    all_roles={player: player.role for player in self.board.players},
+                    all_roles={
+                        player.pid: player.role for player in self.board.players
+                    },
                 )
 
     def personal_event(self, player: Player, event_type: Event, **kwargs):

@@ -43,7 +43,7 @@ class Board:
         self.fascist_track = self.settings.fascist_pre_enact
         self.failed_election_tracker = 0
         self.discards = []
-        self.inv_target = None
+        self.inv_target: Player = None
 
         self.term_blocked: List[Player] = []
         self.president: Player = self.players[0]
