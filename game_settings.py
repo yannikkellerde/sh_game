@@ -35,5 +35,5 @@ class GameSettings:
 
         return cls(
             num_players=num_players,
-            **config[str(num_players)]["rebalanced" if is_rebalanced else "default"]
+            **config[str(num_players)]["rebalanced" if is_rebalanced else "default"],
         )

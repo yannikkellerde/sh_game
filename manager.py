@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Tuple
 from sh_game.types.event_types import Event
 
 if TYPE_CHECKING:
-    from sh_game.game import Game
     from sh_game.board import Board
+    from sh_game.game import Game
 
 
 class Manager(ABC):

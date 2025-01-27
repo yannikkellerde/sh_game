@@ -1,5 +1,8 @@
+import json
 from typing import List
 from uuid import uuid4
+
+from ykutil import Statlogger
 
 from sh_game.board import Board
 from sh_game.game_settings import GameSettings
@@ -11,7 +14,13 @@ from sh_game.types.game_end_types import GameEnd
 
 
 class Game:
-    def __init__(self, manager: Manager, players: List[Player]):
+    def __init__(
+        self,
+        manager: Manager,
+        players: List[Player],
+        time_logging_file=None,
+        verbose=False,
+    ):
         settings = GameSettings.get_settings(
             len(players), is_rebalanced=len(players) in (6, 7, 9)
         )
@@ -24,8 +33,13 @@ class Game:
         self.max_repeated_chat_messages = 40
         self.chat_streak = 0
         self.game_id = None
+        self.statlogger = Statlogger()
+        self.time_logging_file = time_logging_file
+        self.verbose = verbose
 
     def run_game(self):
+        self.statlogger.start_timer("run_game")
+        self.statlogger.start_timer("setup")
         self.game_id = str(uuid4())
         self.chat_streak = 0
         self.game_result = None
@@ -41,6 +55,7 @@ class Game:
         self.inform_roles()
         self.broadcast(Event.START)
 
+        self.statlogger.stop_timer("setup")
         self.chat_phase()  # TODO: Make this work
         self.nominate_chancellor()
         self.board.phase = 1
@@ -61,8 +76,15 @@ class Game:
             self.nominate_chancellor()
 
         self.broadcast(self.game_result, how=self.game_end_type)
+        self.statlogger.stop_timer("run_game", average=True, summed=True)
+        if self.verbose:
+            print(self.statlogger.stats)
+        if self.time_logging_file is not None:
+            with open(self.time_logging_file, "w") as f:
+                json.dump(self.statlogger.stats, f)
 
     def chat_phase(self):
+        self.statlogger.start_timer("chat_phase")
         last_p = (
             self.board.ex_president if self.board.phase == 1 else self.board.president
         )
@@ -71,7 +93,10 @@ class Game:
         )
         move_on_event = Event.VOTES if self.board.phase == 1 else Event.NOMINATION
         while 1:
+            self.statlogger.start_timer("get_next_action")
             event, pid = self.manager.get_next_action()
+            self.statlogger.stop_timer("get_next_action", average=True, summed=True)
+            self.statlogger.start_timer("chat_phase_act")
             player = self.board.players[pid]
             if event == move_on_event or (
                 event == Event.MESSAGE
@@ -165,6 +190,9 @@ class Game:
                     f"Manager Error: Cannot perform {event} in message phase {self.board.phase}"
                 )
 
+            self.statlogger.stop_timer("chat_phase_act", average=True, summed=True)
+        self.statlogger.stop_timer("chat_phase", average=True, summed=True)
+
     def inform_roles(self):
         for player in self.board.players:
             self.personal_event(player, Event.PERSONAL_ROLE_CALL)
@@ -197,6 +225,7 @@ class Game:
         )
 
     def nominate_chancellor(self):
+        self.statlogger.start_timer("nominate_chancellor")
         chancellor: Player
         chancellor, _hint = self.board.president.perform_action(Event.NOMINATION)
         assert (
@@ -206,8 +235,10 @@ class Game:
         )
         self.broadcast(Event.NOMINATION, pres=self.board.president, chanc=chancellor)
         self.board.nomination(chancellor)
+        self.statlogger.stop_timer("nominate_chancellor", average=True, summed=True)
 
     def voting(self):
+        self.statlogger.start_timer("voting")
         self.board.on_vote()
         player_votes = {}
         for player in self.board.players:
@@ -218,6 +249,7 @@ class Game:
                 self.personal_event(player, Event.PERSONAL_VOTE, vote=vote)
         self.broadcast(Event.VOTES, votes=player_votes)
         vote_list = list(player_votes.values())
+        self.statlogger.stop_timer("voting", average=True, summed=True)
         return vote_list.count("ja") > vote_list.count("nein")
 
     def vote_failed(self):
@@ -244,6 +276,7 @@ class Game:
                 )
 
     def vote_passed(self):
+        self.statlogger.start_timer("government")
         if self.board.chancellor.role == "hitler" and self.board.fascist_track >= 3:
             self.game_end_type = GameEnd.HITLER_CHANCELLOR
             self.game_result = Event.FASCIST_WIN
@@ -291,6 +324,7 @@ class Game:
             maximum=self.board.settings.track_len[enact],
         )
         self.game_result = self.board.enact_policy(enact)
+        self.statlogger.stop_timer("government", average=True, summed=True)
         if self.game_result is not None:
             if self.game_result is Event.FASCIST_WIN:
                 self.game_end_type = GameEnd.FASCIST_CARDS
@@ -301,6 +335,7 @@ class Game:
             self.introduce_presidential_power()
 
     def introduce_presidential_power(self):
+        self.statlogger.start_timer("pres_power")
         pres_power = self.board.settings.fascist_track[self.board.fascist_track - 1]
         assert self.board.action_type is None
         assert not self.board.action_done
@@ -326,3 +361,4 @@ class Game:
                 self.board.action_type = Event.SPECIAL_ELECT_ACTION
             else:
                 raise ValueError("Invalid president power", pres_power)
+        self.statlogger.stop_timer("pres_power", average=True, summed=True)
