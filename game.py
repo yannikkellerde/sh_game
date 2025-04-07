@@ -2,11 +2,10 @@ import json
 from typing import List
 from uuid import uuid4
 
-from ykutil import Statlogger
+from ykutil import Statlogger, log
 
 from sh_game.board import Board
 from sh_game.game_settings import GameSettings
-from sh_game.log_util import log
 from sh_game.manager import Manager
 from sh_game.player import Player
 from sh_game.types.event_types import PRESIDENT_POWERS, Event
