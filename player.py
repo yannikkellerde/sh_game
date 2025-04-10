@@ -8,19 +8,27 @@ if TYPE_CHECKING:
 
 
 class Player(ABC):
-    def __init__(self, pid, name):
+    def __init__(self, pid, name, game_id=None, num_players=None, role=None):
         self.name: str = name
-        self.reset(pid)
-        self.board: Board = None
-        self.num_players: int = None
-        self.game_id: str = None
-
-    def reset(self, pid):
         self.pid: int = pid
-        self.role: str = None
+        self.role: str = role
+        self.board: Board = None
+        self.num_players: int = num_players
+        self.game_id: str = game_id
+        self.is_dead: bool = False
+        self.known_roles: dict[int, str] = {}
+        self.history: list[Event] = []
+        self.game_counter = 0
+
+    def reset(self, pid, role=None):
+        self.pid: int = pid
+        self.role: str = role
         self.is_dead = False
-        self.known_roles: Dict[int, str] = {}
+        self.known_roles: dict[int, str] = {}
         self.history = []
+
+        # Game counter is for versioning scheme
+        self.game_counter += 1
 
     def __hash__(self):
         return hash(f"{self.name}_{self.pid}")
