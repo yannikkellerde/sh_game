@@ -36,6 +36,7 @@ class Event(str, Enum):
     PERSONAL_VOTE = "PERSONAL_VOTE"
     GAME_SETTINGS = "GAME_SETTINGS"
     NOOP = "NOOP"
+    VOTE_ACTION = "VOTE_ACTION"
 
 
 INVERTED_EVENTS: dict[str, Event] = {

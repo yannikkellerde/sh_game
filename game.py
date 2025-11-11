@@ -105,31 +105,29 @@ class Game:
                 break
             elif event == Event.MESSAGE:
                 self.chat_streak += 1
-                msg, hint = player.perform_action(Event.MESSAGE)
+                msg = player.perform_action(Event.MESSAGE)
                 if msg is None:
                     log(f"Player {player.pid} refused to send a message", level="info")
                 else:
-                    self.broadcast(Event.MESSAGE, player=player, message=msg, hint=hint)
+                    self.broadcast(Event.MESSAGE, player=player, message=msg)
             elif self.board.phase > 0:
                 if event == Event.CHANCELLOR_CLAIM:
                     assert last_c is player
-                    assert not self.board.play_card_claimed
-                    claim, _hint = player.perform_action(Event.CHANCELLOR_CLAIM)
+                    assert player is self.board.play_card_to_claim
+                    claim = player.perform_action(Event.CHANCELLOR_CLAIM)
                     self.broadcast(Event.CHANCELLOR_CLAIM, hand=claim, player=player)
-                    self.board.play_card_claimed = True
+                    self.board.play_card_to_claim = None
                 elif event == Event.PRESIDENT_CLAIM:
                     assert last_p is player
-                    assert not self.board.discard_claimed
-                    claim, _hint = player.perform_action(Event.PRESIDENT_CLAIM)
+                    assert player is self.board.discard_to_claim
+                    claim = player.perform_action(Event.PRESIDENT_CLAIM)
                     self.broadcast(Event.PRESIDENT_CLAIM, hand=claim, player=player)
-                    self.board.discard_claimed = True
+                    self.board.discard_to_claim = None
                 elif event in (Event.INVESTIGATION_CLAIM, Event.PEEK_CLAIM):
                     assert last_p is player
-                    assert not self.board.action_claimed
+                    assert player is self.board.action_to_claim
                     assert self.board.action_done
-                    claim, _hint = player.perform_action(
-                        event, inved=self.board.inv_target
-                    )
+                    claim = player.perform_action(event, inved=self.board.inv_target)
                     if event == Event.INVESTIGATION_CLAIM:
                         assert self.board.action_type == Event.INVESTIGATION_ACTION
                         self.broadcast(
@@ -141,7 +139,7 @@ class Game:
                     else:
                         assert self.board.action_type == Event.PEEK_MESSAGE
                         self.broadcast(event, hand=claim, player=player)
-                    self.board.action_claimed = True
+                    self.board.action_to_claim = None
                 elif (
                     self.board.phase == 2
                     and not self.board.action_done
@@ -151,7 +149,7 @@ class Game:
                     assert last_p is player
                     if event == Event.INVESTIGATION_ACTION:
                         inv: Player
-                        inv, _hint = player.perform_action(Event.INVESTIGATION_ACTION)
+                        inv = player.perform_action(Event.INVESTIGATION_ACTION)
                         assert not inv.is_dead and inv is not player
                         self.board.inv_target = inv
                         self.broadcast(
@@ -165,7 +163,7 @@ class Game:
                         )
                     elif event == Event.EXECUTE_ACTION:
                         kill: Player
-                        kill, _hint = player.perform_action(Event.EXECUTE_ACTION)
+                        kill = player.perform_action(Event.EXECUTE_ACTION)
                         assert not kill.is_dead and kill is not player
                         self.broadcast(Event.EXECUTE_ACTION, pres=player, targ=kill)
                         kill.is_dead = True
@@ -175,9 +173,7 @@ class Game:
                             return
                     elif event == Event.SPECIAL_ELECT_ACTION:
                         chosen: Player
-                        chosen, _hint = player.perform_action(
-                            Event.SPECIAL_ELECT_ACTION
-                        )
+                        chosen = player.perform_action(Event.SPECIAL_ELECT_ACTION)
                         assert not chosen.is_dead and chosen is not player
                         self.broadcast(
                             Event.SPECIAL_ELECT_ACTION, old_pres=player, new_pres=chosen
@@ -226,7 +222,7 @@ class Game:
     def nominate_chancellor(self):
         self.statlogger.start_timer("nominate_chancellor")
         chancellor: Player
-        chancellor, _hint = self.board.president.perform_action(Event.NOMINATION)
+        chancellor = self.board.president.perform_action(Event.NOMINATION)
         assert (
             chancellor != self.board.president
             and chancellor not in self.board.term_blocked
@@ -242,7 +238,7 @@ class Game:
         player_votes = {}
         for player in self.board.players:
             if not player.is_dead:
-                vote, _hint = player.perform_action(Event.PERSONAL_VOTE)
+                vote = player.perform_action(Event.PERSONAL_VOTE)
                 assert vote in ("ja", "nein")
                 player_votes[player] = vote
                 self.personal_event(player, Event.PERSONAL_VOTE, vote=vote)
@@ -283,7 +279,7 @@ class Game:
         self.board.vote_success()
         pres_draw = self.board.draw_policy(3)
         self.personal_event(self.board.president, Event.DRAW, hand=pres_draw)
-        (take, discard), _hint = self.board.president.perform_action(
+        (take, discard) = self.board.president.perform_action(
             Event.DISCARD, hand=pres_draw
         )
         self.board.discards.append(discard)
@@ -291,23 +287,19 @@ class Game:
         self.personal_event(
             self.board.chancellor, Event.GET_CARD, hand=take, pres=self.board.president
         )
-        (enact, discard), _hint = self.board.chancellor.perform_action(
+        (enact, discard) = self.board.chancellor.perform_action(
             Event.PLAY_CARD, hand=take
         )
         self.personal_event(self.board.chancellor, Event.PLAY_CARD, card=enact)
         self.board.discards.append(discard)
 
         if self.board.can_veto:
-            chanc_veto, _hint = self.board.chancellor.perform_action(
-                Event.CHANCELLOR_VETO
-            )
+            chanc_veto = self.board.chancellor.perform_action(Event.CHANCELLOR_VETO)
             self.broadcast(
                 Event.CHANCELLOR_VETO, veto=chanc_veto, player=self.board.chancellor
             )
             if chanc_veto:
-                pres_veto, _hint = self.board.president.perform_action(
-                    Event.PRESIDENT_VETO
-                )
+                pres_veto = self.board.president.perform_action(Event.PRESIDENT_VETO)
                 self.broadcast(
                     Event.PRESIDENT_VETO, veto=pres_veto, player=self.board.president
                 )
@@ -338,7 +330,7 @@ class Game:
         pres_power = self.board.settings.fascist_track[self.board.fascist_track - 1]
         assert self.board.action_type is None
         assert not self.board.action_done
-        assert not self.board.action_claimed
+        assert self.board.action_to_claim is None
 
         if pres_power is not None:
             if pres_power == "inv":

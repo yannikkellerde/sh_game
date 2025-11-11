@@ -13,6 +13,7 @@ class BaselinePlayer(Player):
         pass
 
     def perform_action(self, event_type: Event, hand: Optional[List[str]] = None):
+        print(f"Player {self.pid} performing action {event_type}")
         if event_type == Event.NOMINATION:
             return random.choice(self.board.get_legal_nominations())
         elif event_type == Event.DISCARD:

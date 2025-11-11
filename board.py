@@ -1,6 +1,6 @@
 import uuid
 from random import shuffle
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from sh_game.game_settings import GameSettings
 from sh_game.player import Player
@@ -22,12 +22,16 @@ class Board:
             "fascist"
         ] * self.settings.num_fascist_cards
         shuffle(self.policies)
-        shuffle(self.players)
         game_id = uuid.uuid4()
         for i, p in enumerate(self.players):
             p.reset(i)
             p.game_id = game_id
             p.num_players = len(self.players)
+
+        shuffle(self.players)
+        self.pid2player = {p.pid: p for p in self.players}
+        self.pid2index = {p.pid: i for i, p in enumerate(self.players)}
+
         roles = (
             ["liberal"] * self.settings.num_liberals
             + ["fascist"] * (self.settings.num_fascists - 1)
@@ -45,7 +49,7 @@ class Board:
         self.inv_target: Player = None
 
         self.term_blocked: List[Player] = []
-        self.president: Player = self.players[0]
+        self.president: Player = self.pid2player[0]
         self.chancellor: Player = None
         self.ex_president: Player = None
         self.ex_chancellor: Player = None
@@ -53,20 +57,34 @@ class Board:
         self.special_elect_return_president: Player = None
         self.special_elect_choice: Player = None
 
-        self.discard_claimed = False
-        self.play_card_claimed = False
-        self.action_claimed: bool = False
+        self.discard_to_claim: Optional[Player] = None
+        self.play_card_to_claim: Optional[Player] = None
+        self.action_to_claim: Optional[Player] = None
 
         self.action_type: Event = None
         self.action_done: bool = False
         self.phase: int = 0
         self.round_number: int = 0
 
+        self.chanc_veto: Optional[bool] = None
+        self.pres_veto: Optional[bool] = None
+        self.pending_policy: Optional[str] = None
+
+        self.player_votes: dict[Player, bool] = {}
+
     @property
     def hitler(self):
         for p in self.players:
             if p.role == "hitler":
                 return p
+
+    @property
+    def fascist_team_size(self):
+        return sum(1 for p in self.players if p.is_fascist_team and not p.is_dead)
+
+    @property
+    def liberal_team_size(self):
+        return sum(1 for p in self.players if p.role == "liberal" and not p.is_dead)
 
     @property
     def tracks(self):
@@ -111,20 +129,28 @@ class Board:
         return None
 
     def nomination(self, chancellor: Player):
+        self.chanc_veto = None
+        self.pres_veto = None
         self.ex_chancellor = self.chancellor
         self.chancellor = chancellor
         self.phase = 1
+        self.pending_policy = None
 
     def on_vote(self):
+        self.player_votes = {p: None for p in self.players}
         self.action_type = None
         self.action_done = False
+
+        # Too late to claim now if voting already happened
+        self.discard_to_claim = None
+        self.play_card_to_claim = None
+
         self.phase = 2
 
     def vote_failed(self):
         # Nothing to claim if vote failed
-        self.discard_claimed = True
-        self.action_claimed = True
-        self.play_card_claimed = True
+        self.discard_to_claim = None
+        self.play_card_to_claim = None
 
         self.failed_election_tracker += 1
         if self.failed_election_tracker == self.settings.election_tracker_size:
@@ -135,9 +161,8 @@ class Board:
 
     def vote_success(self):
         self.failed_election_tracker = 0
-        self.discard_claimed = False
-        self.action_claimed = False
-        self.play_card_claimed = False
+        self.discard_to_claim = self.president
+        self.play_card_to_claim = self.chancellor
 
         self.term_blocked = [self.chancellor]
         if self.alive_players > 5:
@@ -153,7 +178,9 @@ class Board:
             next_president = self.president
         old_pres = next_president
         while next_president is old_pres or next_president.is_dead:
-            next_president = self.players[(next_president.pid + 1) % len(self.players)]
+            next_president = self.pid2player[
+                (next_president.pid + 1) % len(self.players)
+            ]
         return next_president
 
     def set_next_president(self):
@@ -182,44 +209,34 @@ class Board:
         if self.phase == 1:
             legals = {
                 Event.VOTES: [0],
-                Event.MESSAGE: [i for i, x in enumerate(self.players) if not x.is_dead],
+                Event.MESSAGE: [
+                    pid for pid, player in self.pid2player.items() if not player.is_dead
+                ],
             }
-            if (
-                not self.discard_claimed
-                and self.ex_president is not None
-                and not self.ex_president.is_dead
-            ):
-                legals[Event.PRESIDENT_CLAIM] = [self.ex_president.pid]
-            if (
-                not self.play_card_claimed
-                and self.ex_chancellor is not None
-                and not self.ex_chancellor.is_dead
-            ):
-                legals[Event.CHANCELLOR_CLAIM] = [self.ex_chancellor.pid]
         elif self.phase in (0, 2):
             legals = {
-                Event.MESSAGE: [i for i, x in enumerate(self.players) if not x.is_dead],
+                Event.MESSAGE: [
+                    pid for pid, player in self.pid2player.items() if not player.is_dead
+                ],
             }
-            # if self.can_veto:
-            #    assert self.action_type is None
-            #    legals[Event.PRESIDENT_VETO] = [self.president.id]
-            #    legals[Event.CHANCELLOR_VETO] = [self.chancellor.id]
-            # else:
             if self.action_type is None or self.action_done:
-                legals[Event.NOMINATION] = [self.compute_next_president().pid]
-            if not self.discard_claimed and self.phase == 2:
-                legals[Event.PRESIDENT_CLAIM] = [self.president.pid]
-            if (
-                not self.play_card_claimed
-                and not (self.chancellor is None or self.chancellor.is_dead)
-                and self.phase == 2
-            ):
-                legals[Event.CHANCELLOR_CLAIM] = [self.chancellor.pid]
+                legals[Event.NOMINATION] = [self.president.pid]
             if self.action_type is not None and not self.action_done:
-                legals[self.action_type] = [self.president.pid]
-            if self.action_done and not self.action_claimed:
-                if self.action_type == Event.PEEK_MESSAGE:
-                    legals[Event.PEEK_CLAIM] = [self.president.pid]
-                elif self.action_type == Event.INVESTIGATION_ACTION:
-                    legals[Event.INVESTIGATION_CLAIM] = [self.president.pid]
+                if self.action_type == Event.CHANCELLOR_VETO:
+                    legals[Event.CHANCELLOR_VETO] = [self.chancellor.pid]
+                else:
+                    legals[self.action_type] = [self.president.pid]
+        if self.discard_to_claim is not None and not self.discard_to_claim.is_dead:
+            legals[Event.PRESIDENT_CLAIM] = [self.discard_to_claim.pid]
+        if self.play_card_to_claim is not None and not self.play_card_to_claim.is_dead:
+            legals[Event.CHANCELLOR_CLAIM] = [self.play_card_to_claim.pid]
+        if (
+            self.action_done
+            and self.action_to_claim is not None
+            and not self.action_to_claim.is_dead
+        ):
+            if self.action_type == Event.PEEK_MESSAGE:
+                legals[Event.PEEK_CLAIM] = [self.action_to_claim.pid]
+            elif self.action_type == Event.INVESTIGATION_ACTION:
+                legals[Event.INVESTIGATION_CLAIM] = [self.action_to_claim.pid]
         return legals
