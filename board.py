@@ -193,7 +193,7 @@ class Board:
             self.special_elect_return_president = return_pres
         self.special_elect_choice = None
 
-    def get_legal_nominations(self):
+    def get_legal_nominations(self) -> list[Player]:
         return [
             x
             for x in self.players
@@ -208,7 +208,7 @@ class Board:
     def get_legal_actions(self) -> Dict[Event, List[int]]:
         if self.phase == 1:
             legals = {
-                Event.VOTES: [0],
+                Event.PERSONAL_VOTE: list(range(len(self.players))),
                 Event.MESSAGE: [
                     pid for pid, player in self.pid2player.items() if not player.is_dead
                 ],
