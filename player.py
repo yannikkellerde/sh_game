@@ -17,7 +17,7 @@ class Player(ABC):
         self.game_id: str = game_id
         self.is_dead: bool = False
         self.known_roles: dict[int, str] = {}
-        self.history: list[Event] = []
+        self.history: list[str] = []
         self.game_counter = 0
 
     def reset(self, pid, role=None):

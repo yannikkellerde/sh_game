@@ -198,17 +198,19 @@ class Board:
             x
             for x in self.players
             if (
-                not x.is_dead and not x in self.term_blocked and not x is self.president
+                not x.is_dead and x not in self.term_blocked and x is not self.president
             )
         ]
 
     def get_legal_to_act_on(self):
-        return [x for x in self.players if (not x.is_dead and not x is self.president)]
+        return [x for x in self.players if (not x.is_dead and x is not self.president)]
 
     def get_legal_actions(self) -> Dict[Event, List[int]]:
         if self.phase == 1:
             legals = {
-                Event.PERSONAL_VOTE: list(range(len(self.players))),
+                Event.PERSONAL_VOTE: [
+                    player.pid for player in self.players if not player.is_dead
+                ],
                 Event.MESSAGE: [
                     pid for pid, player in self.pid2player.items() if not player.is_dead
                 ],
